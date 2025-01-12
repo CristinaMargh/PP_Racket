@@ -2,11 +2,10 @@
 
 (provide (all-defined-out))
 
-;; Un arbore de sufixe este un arbore care conține toate sufixele
-;; unui text T (de obicei un text lung asupra căruia sunt necesare
-;; prelucrări multiple), ca în figura de mai jos (arborele de 
-;; sufixe pentru textul "BANANA", unde nodurile sunt reprezentate
-;; prin *, iar muchiile sunt etichetate cu subșiruri din T).
+;; A suffix tree is a tree containing all the suffixes of a text T 
+;; (usually a long text requiring multiple operations), as shown in the 
+;; figure below (the suffix tree for the text "BANANA", where nodes are 
+;; represented by *, and edges are labeled with substrings of T).
 ;;
 ;;                            *
 ;;   __________ ______________|______________
@@ -25,19 +24,19 @@
 ;;                |       |
 ;;                *       *
 ;;
-;; Fiecare cale în arborele de sufixe corespunde unui subșir al
-;; textului T, iar fiecare cale completă corespunde unui sufix
-;; (pentru a nu "pierde" sufixele care sunt prefixele altor sufixe,
-;; adăugăm la sfârșitul fiecărui sufix caracterul special $).
-;; În figură, calea cea mai din stânga corespunde sufixului vid. 
+;; Each path in the suffix tree corresponds to a substring of text T, 
+;; and each complete path corresponds to a suffix. 
+;; To ensure that suffixes that are prefixes of other suffixes are not "lost," 
+;; we append the special character `$` at the end of each suffix.
+;; In the figure, the leftmost path corresponds to the empty suffix.
 ;;
-;; Arborele de mai sus este un arbore de sufixe compact, adică 
-;; folosește minimul de muchii posibile (fiecare muchie este
-;; etichetată cu cel mai lung prefix comun al sufixelor de mai jos.
+;; The above tree is a compact suffix tree, meaning it uses the minimum 
+;; number of edges possible (each edge is labeled with the longest common 
+;; prefix of the suffixes below it).
 ;;
-;; În contrast, un arbore de sufixe atomic folosește numărul maxim
-;; de muchii, fiecare muchie fiind etichetată cu un singur caracter.
-;; Exemplu (pentru textul "BANANA"):
+;; In contrast, an atomic suffix tree uses the maximum number of edges, 
+;; with each edge labeled with a single character. 
+;; Example (for the text "BANANA"):
 ;;
 ;;                            *
 ;;   __________ ______________|______________
@@ -73,100 +72,93 @@
 ;;                            |
 ;;                            *
 ;;
-;; Indiferent cu care din cele două reprezentări lucrăm,
-;; reprezentăm un arbore de sufixe ca pe o listă de ramuri,
-;; unde fiecare ramură este o pereche între eticheta primei
-;; muchii și subarborele de sub această muchie. Pentru textul
-;; "banana", reprezentarea arborelui de sufixe compact este:
+;; Regardless of whether we work with compact or atomic representations, 
+;; a suffix tree is represented as a list of branches, where each branch 
+;; is a pair consisting of the label of the first edge and the subtree 
+;; below that edge. For the text "BANANA," the compact suffix tree 
+;; representation is:
 ;;
-;;'(("$")
-;;  ("a" ("$")
-;;       ("na" ("$")
-;;             ("na$")))
-;;  ("banana$")
-;;  ("na" ("$")
-;;        ("na$")))
+;; '(("$")
+;;   ("a" ("$")
+;;        ("na" ("$")
+;;              ("na$")))
+;;   ("banana$")
+;;   ("na" ("$")
+;;         ("na$")))
 ;;
-;; Am oferit reprezentarea cu stringuri pentru claritate. În
-;; realitate, pentru a profita de funcțiile de lucru cu liste,
-;; vom reține fiecare string ca listă de caractere, iar
-;; reprezentarea reală devine:
+;; We have provided the representation using strings for clarity. 
+;; In reality, to take advantage of list-processing functions, 
+;; each string will be stored as a list of characters, and the 
+;; actual representation becomes:
 ;;
-;;'(((#\$))
-;;  ((#\a) ((#\$))
-;;         ((#\n #\a) ((#\$))
-;;                    ((#\n #\a #\$))))
-;;  ((#\b #\a #\n #\a #\n #\a #\$))
-;;  ((#\n #\a) ((#\$))
-;;             ((#\n #\a #\$))))
+;; '(((#\$))
+;;   ((#\a) ((#\$))
+;;          ((#\n #\a) ((#\$))
+;;                     ((#\n #\a #\$))))
+;;   ((#\b #\a #\n #\a #\n #\a #\$))
+;;   ((#\n #\a) ((#\$))
+;;              ((#\n #\a #\$))))
 ;;
-;; În continuare veți defini o bibliotecă pentru manipularea
-;; arborilor de sufixe definiți anterior.
-
+;; Below, you will define a library for manipulating the suffix trees 
+;; described earlier.
 
 ; TODO 1
-; Definiți următorii constructori și operatori ai structurii
-; de date Arbore de Sufixe (pe viitor vom prescurta numele 
-; acestei structuri de date ca ST, de la denumirea în engleză).
-; Obs: Tipul de date Label este de fapt tipul [Char] (listă
-; de caractere), dar am folosit aliasul Label pentru a clarifica
-; semnificația valorilor de tip Label).
+; Define the following constructors and operators for the Suffix Tree 
+; data structure (henceforth abbreviated as ST, from the English name).
+; Note: The `Label` type is actually the type `[Char]` (list of characters), 
+; but we use the alias `Label` to clarify the meaning of the values of type `Label`.
 
-; arborele de sufixe vid
+; The empty suffix tree
 ; empty-st : -> ST
 
-; arborele este o lista de ramuri, ramura e o pereche de eticheta si alta ramura
+; The tree is a list of branches, where a branch is a pair of a label and another tree
 (define empty-st
   null)
 
-; operatorul care verifică dacă un ST este vid
+; Operator that checks if an ST is empty
 ; st-empty? : ST -> Bool
 (define (st-empty? st)
   (if (null? st)
       #t
       #f))
 
-; operatorul care extrage prima ramură a unui ST
+; Operator that extracts the first branch of an ST
 ; first-branch : ST -> (Label, ST)
 (define (first-branch st)
   (if (null? st)
       null
       (car st)))
 
-; operatorul care extrage restul ramurilor unui ST (fără prima)
+; Operator that extracts the rest of the branches of an ST (excluding the first)
 ; other-branches : ST -> [(Label, ST)]
-; Obs: signatura [(Label, ST)] se citește ca "listă de perechi 
-; între o etichetă și un ST"
+; Note: The signature `[(Label, ST)]` is read as "list of pairs 
+; between a label and an ST."
 (define (other-branches st)
   (if (null? st)
       null
       (cdr st)))
 
-; operatorul care extrage eticheta din vârful unei ramuri
+; Operator that extracts the label at the top of a branch
 ; get-branch-label : (Label, ST) -> Label
 (define (get-branch-label edge)
-  (car edge)
-  )
+  (car edge))
 
-; operatorul care extrage subarborele de sub eticheta ramurii
+; Operator that extracts the subtree below the label of a branch
 ; get-branch-subtree : (Label, ST) -> ST
 (define (get-branch-subtree edge)
-  (cdr edge)
-  )
+  (cdr edge))
 
-; operatorul care identifică ramura unui ST a cărei etichetă
-; începe cu caracterul ch, dacă o asemenea ramură există
-; Obs: din felul în care sunt construiți arborii, nu vor exista
-; niciodată două ramuri care încep cu același caracter.
-; get-ch-branch : ST x Char -> (Label, ST) - ramura, dacă există
-;                           -> Bool        - altfel fals
-; Important: Pentru manipularea arborelui folosiți operatorii de 
-; mai sus, astfel încât implementarea funcției get-ch-branch să 
-; nu trebuiască schimbată în caz că schimbăm modul de reprezentare 
-; a arborilor de sufixe.
+; Operator that identifies the branch of an ST whose label starts 
+; with the character `ch`, if such a branch exists.
+; Note: Due to the way trees are constructed, there will never be 
+; two branches starting with the same character.
+; get-ch-branch : ST x Char -> (Label, ST) - branch, if it exists
+;                           -> Bool        - otherwise false
+; Important: Use the operators defined above to manipulate the tree 
+; so that the implementation of `get-ch-branch` does not need to be 
+; changed if we change the representation of suffix trees.
 (define (get-ch-branch st ch)
   (if (null? st) #f
-      (if (equal? (car(get-branch-label(first-branch st)))ch)
+      (if (equal? (car (get-branch-label (first-branch st))) ch)
           (first-branch st)
-          (get-ch-branch (other-branches st) ch)
-  )))
+          (get-ch-branch (other-branches st) ch))))
