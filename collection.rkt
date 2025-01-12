@@ -2,39 +2,38 @@
 
 (provide (all-defined-out))
 
-;; În acest fișier vă definiți constructorii și
-;; operatorii tipului Collection.
-;; În etapele anterioare, colecțiile erau de fapt
-;; liste.
-;; În definițiile de mai jos, veți considera că
-;; o colecție este implementată ca flux.
+;; In this file you define your constructors and
+;; operators for the Collection type.
+;; In the previous steps, collections were actually
+;; lists.
+;; In the definitions below, you will consider
+;; a collection to be implemented as a stream.
 
-; Întrucât stream-cons nu este o funcție obișnuită, 
-; ci este definită ca o sintaxă specială, astfel
-; încât ea să nu își evalueze argumentele înainte 
-; de apel (comportament pe care ni-l dorim și pentru 
-; collection-cons), nu putem folosi o definiție
-; de tipul
-;    (define collection-cons stream-cons)
-; (genul acesta de definiție generează o eroare).
-; Nici varianta
-;    (define (collection-cons x xs) (stream-cons x xs))
-; nu este o soluție, întrucât funcțiile definite de noi
-; în Racket sunt funcții stricte, iar x și xs vor fi
-; evaluate înainte de a intra în corpul funcției
-; collection-cons și a descoperi că ele vor fi
-; argumentele unui stream-cons.
-; Modul de a defini collection-cons pentru a reproduce
-; întocmai comportamentul lui stream-cons este:
+; Since stream-cons is not a regular function,
+; but is defined as a special syntax, so
+; that it does not evaluate its arguments before
+; calling it (the behavior we also want for
+; collection-cons), we cannot use a definition
+; like
+; (define collection-cons stream-cons)
+; (this kind of definition generates an error).
+; Neither
+; (define (collection-cons x xs) (stream-cons x xs))
+; is a solution, since the functions we define
+; in Racket are strict functions, and x and xs will be
+; evaluated before entering the function body
+; collection-cons and discover that they will be
+; the arguments of a stream-cons.
+; The way to define collection-cons to reproduce
+; exactly the behavior of stream-cons is:
 (define-syntax-rule (collection-cons x xs) (stream-cons x xs))
-; Obs: puteți schimba numele funcției, dacă nu vă
-; place "collection-cons". Este o funcție folosită doar
-; de voi în fișierul etapa4.rkt, nu de checker.
-
+; Note: you can change the name of the function, if you
+; don't like "collection-cons". It is a function used only
+; by you in the file etapa4.rkt, not by the checker.
 
 ; TODO
-; Scrieți în continuare restul definițiilor
-; (care nu necesită o sintaxă specială).
+; Continue writing the rest of the definitions
+; (which do not require any special syntax).
 (define-syntax-rule (collection-first xs) (stream-first xs))
 (define-syntax-rule (collection-rest xs) (stream-rest xs))
 (define empty-collection empty-stream)
