@@ -1,6 +1,6 @@
 #lang racket
 (require "suffix-tree.rkt")
-(require "etapa1.rkt")
+(require "first.rkt")
 
 (provide (all-defined-out))
 
